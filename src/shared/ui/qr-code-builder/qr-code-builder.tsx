@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { TbCopy, TbDownload } from 'react-icons/tb'
 import { renderSVG } from 'uqr'
 
+import { sanitizeSvgForDisplay } from '@shared/ui/safe-svg'
 import {
     copyScreenshotToClipboard,
     downloadScreenshot,
@@ -66,10 +67,12 @@ export function QrCodeBuilder({ data, title }: IProps) {
 
     const qrRef = useRef<HTMLDivElement>(null)
 
-    const svgHtml = renderSVG(data, {
-        whiteColor: bgColor,
-        blackColor: fgColor
-    })
+    const svgHtml = sanitizeSvgForDisplay(
+        renderSVG(data, {
+            whiteColor: bgColor,
+            blackColor: fgColor
+        })
+    )
 
     const handleCopy = async () => {
         if (!qrRef.current) return
