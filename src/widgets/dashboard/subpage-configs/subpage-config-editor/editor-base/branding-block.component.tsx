@@ -1,15 +1,15 @@
 import { Card, Divider, Stack, TextInput } from '@mantine/core'
 import { UseFormReturnType } from '@mantine/form'
-import { TSubscriptionPageRawConfig } from '@remnawave/subscription-page-types'
 import { IconPalette } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
+import { TPanelSubscriptionPageConfig } from '@shared/utils/subscription-page-config'
 
 import styles from '../subpage-config-visual-editor.module.css'
 
 interface IProps {
-    form: UseFormReturnType<TSubscriptionPageRawConfig>
+    form: UseFormReturnType<TPanelSubscriptionPageConfig>
 }
 
 export function BrandingBlockComponent({ form }: IProps) {

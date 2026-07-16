@@ -4,12 +4,12 @@ import { useDisclosure } from '@mantine/hooks'
 import {
     BASE_TRANSLATION_LABELS,
     TSubscriptionPageBaseTranslationKeys,
-    TSubscriptionPageLanguageCode,
-    TSubscriptionPageRawConfig
+    TSubscriptionPageLanguageCode
 } from '@remnawave/subscription-page-types'
 import { IconLanguage } from '@tabler/icons-react'
 
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
+import { TPanelSubscriptionPageConfig } from '@shared/utils/subscription-page-config'
 
 import { BaseTranslationsDrawer } from '../editor-components/base-translations-drawer.component'
 import styles from '../subpage-config-visual-editor.module.css'
@@ -19,7 +19,7 @@ const TRANSLATION_KEYS = Object.keys(
 ) as TSubscriptionPageBaseTranslationKeys[]
 
 interface IProps {
-    form: UseFormReturnType<TSubscriptionPageRawConfig>
+    form: UseFormReturnType<TPanelSubscriptionPageConfig>
 }
 
 export function BaseTranslationsBlockComponent({ form }: IProps) {

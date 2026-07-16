@@ -13,6 +13,8 @@ import {
 } from '@tabler/icons-react'
 import isSvg from 'is-svg'
 
+import { SafeSvg } from '@shared/ui/safe-svg'
+
 import styles from '../subpage-config-visual-editor.module.css'
 
 interface IProps {
@@ -51,10 +53,7 @@ export function AppCard(props: IProps) {
                 <Group gap="sm" wrap="nowrap">
                     <Box className={styles.appIconPreview} visibleFrom="sm">
                         {hasValidIcon ? (
-                            <Box
-                                className={styles.appIconSvg}
-                                dangerouslySetInnerHTML={{ __html: svgContent }}
-                            />
+                            <SafeSvg className={styles.appIconSvg} source={svgContent} />
                         ) : (
                             <IconPhoto color="var(--mantine-color-dimmed)" size={18} />
                         )}

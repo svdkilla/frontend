@@ -14,13 +14,10 @@ import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
 import { GetSubscriptionPageConfigCommand } from '@remnawave/backend-contract'
 import {
-    SubscriptionPageRawConfigSchema,
-    TSubscriptionPageRawConfig
-} from '@remnawave/subscription-page-types'
-import {
     BaseSettingsBlockComponent,
     BaseTranslationsBlockComponent,
     BrandingBlockComponent,
+    CustomLinksBlockComponent,
     LocalizationBlockComponent,
     PlatformBlockComponent,
     SvgLibraryBlockComponent,
@@ -56,6 +53,10 @@ import { Page, PageHeaderShared } from '@shared/ui'
 import { useDownloadTemplate } from '@shared/ui/load-templates/use-download-template'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import { sleep } from '@shared/utils/misc'
+import {
+    PanelSubscriptionPageConfigSchema,
+    TPanelSubscriptionPageConfig
+} from '@shared/utils/subscription-page-config'
 
 import styles from './subpage-config-editor-page.module.css'
 
@@ -69,10 +70,11 @@ export const SubpageConfigEditorPageComponent = (props: Props) => {
     const navigate = useNavigate()
 
     const resetRef = useRef<() => void>(null)
-    const form = useForm<TSubscriptionPageRawConfig>({
+    const initialConfig = PanelSubscriptionPageConfigSchema.parse(config.config)
+    const form = useForm<TPanelSubscriptionPageConfig>({
         mode: 'uncontrolled',
-        initialValues: config.config as TSubscriptionPageRawConfig,
-        validate: zodResolver(SubscriptionPageRawConfigSchema)
+        initialValues: initialConfig,
+        validate: zodResolver(PanelSubscriptionPageConfigSchema)
     })
 
     const { mutate: updateSubscriptionPageConfig, isPending: isUpdatingSubscriptionPageConfig } =
@@ -128,7 +130,7 @@ export const SubpageConfigEditorPageComponent = (props: Props) => {
     }
 
     const handleImportByMode = async (
-        importedConfig: TSubscriptionPageRawConfig,
+        importedConfig: TPanelSubscriptionPageConfig,
         mode: ImportMode
     ) => {
         notifications.show({
@@ -192,7 +194,7 @@ export const SubpageConfigEditorPageComponent = (props: Props) => {
         try {
             const content = await file.text()
             const configData = JSON.parse(content)
-            const validatedConfig = SubscriptionPageRawConfigSchema.safeParse(configData)
+            const validatedConfig = PanelSubscriptionPageConfigSchema.safeParse(configData)
 
             if (!validatedConfig.success) {
                 const errors = validatedConfig.error.errors.map((err) => ({
@@ -361,6 +363,7 @@ export const SubpageConfigEditorPageComponent = (props: Props) => {
                     <LocalizationBlockComponent form={form} />
                 </SimpleGrid>
                 <BaseSettingsBlockComponent form={form} />
+                <CustomLinksBlockComponent form={form} />
                 <SvgLibraryBlockComponent form={form} />
                 <BaseTranslationsBlockComponent form={form} />
                 <UiConfigBlockComponent form={form} />

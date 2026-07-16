@@ -11,17 +11,17 @@ import {
     ThemeIcon
 } from '@mantine/core'
 import { UseFormReturnType } from '@mantine/form'
-import { TSubscriptionPageRawConfig } from '@remnawave/subscription-page-types'
 import { useTranslation } from 'react-i18next'
 import { HiQuestionMarkCircle } from 'react-icons/hi'
 import { TbHealthRecognition, TbKey, TbLink } from 'react-icons/tb'
 
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
+import { TPanelSubscriptionPageConfig } from '@shared/utils/subscription-page-config'
 
 import styles from '../subpage-config-visual-editor.module.css'
 
 interface IProps {
-    form: UseFormReturnType<TSubscriptionPageRawConfig>
+    form: UseFormReturnType<TPanelSubscriptionPageConfig>
 }
 
 export function BaseSettingsBlockComponent({ form }: IProps) {

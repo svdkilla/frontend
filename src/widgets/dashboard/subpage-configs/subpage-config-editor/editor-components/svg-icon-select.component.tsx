@@ -15,6 +15,8 @@ import isSvg from 'is-svg'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { SafeSvg } from '@shared/ui/safe-svg'
+
 import styles from '../subpage-config-visual-editor.module.css'
 import { RequiredAsterisk } from './required-asterisk'
 
@@ -80,9 +82,9 @@ export function SvgIconSelect(props: IProps) {
                         <Group gap="sm" wrap="nowrap">
                             <Box className={styles.iconSelectPreview}>
                                 {isValidSelectedSvg && selectedSvg ? (
-                                    <Box
+                                    <SafeSvg
                                         className={styles.iconSelectSvg}
-                                        dangerouslySetInnerHTML={{ __html: selectedSvg }}
+                                        source={selectedSvg}
                                     />
                                 ) : (
                                     <IconPhoto color="var(--mantine-color-dimmed)" size={20} />
@@ -136,9 +138,9 @@ export function SvgIconSelect(props: IProps) {
                                                 size={52}
                                                 variant="subtle"
                                             >
-                                                <Box
+                                                <SafeSvg
                                                     className={styles.iconSelectItemSvg}
-                                                    dangerouslySetInnerHTML={{ __html: svg }}
+                                                    source={svg}
                                                 />
 
                                                 {isSelected && (

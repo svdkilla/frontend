@@ -102,11 +102,7 @@ export const ViewApiTokenContentWidget = ({ isMobile, token }: IProps) => {
                                             size="xs"
                                             variant="subtle"
                                         >
-                                            {copied ? (
-                                                <TbCheck size={14} />
-                                            ) : (
-                                                <TbCopy size={14} />
-                                            )}
+                                            {copied ? <TbCheck size={14} /> : <TbCopy size={14} />}
                                         </ActionIcon>
                                     </Tooltip>
                                 )}

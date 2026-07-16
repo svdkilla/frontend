@@ -2231,6 +2231,35 @@
       "user-consumption-multiplier": "User Consumption Multiplier"
     }
   },
+  "custom-links-block": {
+    "component": {
+      "title": "Custom links",
+      "subtitle": "Add safe links and connection actions to the subscription page",
+      "add": "Add link",
+      "edit": "Edit link",
+      "empty": "No custom links yet",
+      "empty-hint": "Add a link, choose its action, then drag rows to set the display order.",
+      "mode": "Source",
+      "mode-literal": "Same URI for everyone",
+      "mode-template": "Personalized template",
+      "mode-subscriptionLinks": "Links by protocol",
+      "action": "Action",
+      "action-open": "Open",
+      "action-copy": "Copy",
+      "action-qr": "Show QR",
+      "display-name": "Display name",
+      "protocol": "Connection protocol",
+      "template-variables": "Allowed variables: {{username}}, {{shortUuid}}, {{subscriptionUrl}}",
+      "literal-warning": "This URI is identical for every subscriber. Do not place another user's private connection key here.",
+      "icon": "Icon",
+      "preview": "Preview",
+      "unnamed": "Unnamed link",
+      "validation-error": "Link is not valid",
+      "fix-fields": "Review the highlighted fields and try again.",
+      "delete-title": "Delete custom link?",
+      "delete-confirm": "“{{name}}” will be removed after you save the page configuration."
+    }
+  },
   "keypair-generator": {
     "widget": {
       "generate": "Generate"

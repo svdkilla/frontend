@@ -2,20 +2,20 @@ import { Accordion, Card, Divider, Group, Select, Stack, Text } from '@mantine/c
 import { UseFormReturnType } from '@mantine/form'
 import {
     TSubscriptionPagePlatformKey,
-    TSubscriptionPagePlatformSchema,
-    TSubscriptionPageRawConfig
+    TSubscriptionPagePlatformSchema
 } from '@remnawave/subscription-page-types'
 import { IconDeviceDesktop, IconPlus } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
+import { TPanelSubscriptionPageConfig } from '@shared/utils/subscription-page-config'
 
 import { PlatformEditor } from '../editor-components/platform-editor.component'
 import styles from '../subpage-config-visual-editor.module.css'
 import { AVAILABLE_PLATFORMS, PLATFORM_LABELS } from '../subpage-config.constants'
 
 interface IProps {
-    form: UseFormReturnType<TSubscriptionPageRawConfig>
+    form: UseFormReturnType<TPanelSubscriptionPageConfig>
 }
 
 export function PlatformBlockComponent(props: IProps) {

@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
+import { SafeSvg, sanitizeSvgForDisplay } from '@shared/ui/safe-svg'
 
 import styles from '../subpage-config-visual-editor.module.css'
 
@@ -44,31 +45,38 @@ export function SvgLibraryModal(props: IProps) {
     const libraryEntries = Object.entries(svgLibrary)
 
     useEffect(() => {
-        const invalidKeys = libraryEntries.filter(([, svg]) => !isSvg(svg)).map(([key]) => key)
-
-        if (invalidKeys.length > 0) {
-            const cleanedLibrary = { ...svgLibrary }
-            for (const key of invalidKeys) {
-                delete cleanedLibrary[key]
+        const cleanedLibrary: TSubscriptionPageSvgLibrary = {}
+        let changed = false
+        for (const [key, source] of libraryEntries) {
+            const sanitized = sanitizeSvgForDisplay(source)
+            if (sanitized && isSvg(sanitized)) {
+                cleanedLibrary[key] = sanitized
+                changed ||= sanitized !== source
+            } else {
+                changed = true
             }
+        }
+        if (changed) {
             onChange(cleanedLibrary)
         }
     }, [])
 
     const handleAdd = () => {
-        if (!newKey.trim() || !isSvg(newSvg)) return
+        const sanitized = sanitizeSvgForDisplay(newSvg)
+        if (!newKey.trim() || !sanitized || !isSvg(sanitized)) return
         if (!/^[A-Za-z]+$/.test(newKey)) return
 
-        onChange({ ...svgLibrary, [newKey]: newSvg })
+        onChange({ ...svgLibrary, [newKey]: sanitized })
         setNewKey('')
         setNewSvg('')
         closeAddDrawer()
     }
 
     const handleUpdate = () => {
-        if (!editingKey || !isSvg(newSvg)) return
+        const sanitized = sanitizeSvgForDisplay(newSvg)
+        if (!editingKey || !sanitized || !isSvg(sanitized)) return
 
-        onChange({ ...svgLibrary, [editingKey]: newSvg })
+        onChange({ ...svgLibrary, [editingKey]: sanitized })
         setEditingKey(null)
         setNewSvg('')
         closeAddDrawer()
@@ -197,10 +205,8 @@ export function SvgLibraryModal(props: IProps) {
                                                         }}
                                                         variant="light"
                                                     >
-                                                        <span
-                                                            dangerouslySetInnerHTML={{
-                                                                __html: svg
-                                                            }}
+                                                        <SafeSvg
+                                                            source={svg}
                                                             style={{
                                                                 display: 'flex',
                                                                 alignItems: 'center'
@@ -309,10 +315,8 @@ export function SvgLibraryModal(props: IProps) {
                                                 }}
                                                 variant="light"
                                             >
-                                                <span
-                                                    dangerouslySetInnerHTML={{
-                                                        __html: newSvg
-                                                    }}
+                                                <SafeSvg
+                                                    source={newSvg}
                                                     style={{
                                                         display: 'flex',
                                                         alignItems: 'center'

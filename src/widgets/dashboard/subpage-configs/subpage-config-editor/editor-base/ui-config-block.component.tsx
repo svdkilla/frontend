@@ -2,18 +2,18 @@ import { Card, Divider, Select, SimpleGrid, Stack } from '@mantine/core'
 import { UseFormReturnType } from '@mantine/form'
 import {
     INSTALLATION_GUIDE_BLOCKS_VARIANTS_VALUES,
-    SUBSCRIPTION_INFO_BLOCK_VARIANTS_VALUES,
-    TSubscriptionPageRawConfig
+    SUBSCRIPTION_INFO_BLOCK_VARIANTS_VALUES
 } from '@remnawave/subscription-page-types'
 import { IconPalette } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
+import { TPanelSubscriptionPageConfig } from '@shared/utils/subscription-page-config'
 
 import styles from '../subpage-config-visual-editor.module.css'
 
 interface IProps {
-    form: UseFormReturnType<TSubscriptionPageRawConfig>
+    form: UseFormReturnType<TPanelSubscriptionPageConfig>
 }
 
 export function UiConfigBlockComponent({ form }: IProps) {

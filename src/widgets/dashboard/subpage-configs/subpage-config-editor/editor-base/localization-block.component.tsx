@@ -2,13 +2,13 @@ import { Badge, Card, Divider, Group, ScrollArea, SimpleGrid, Stack } from '@man
 import { UseFormReturnType } from '@mantine/form'
 import {
     getLanguagesArray,
-    TSubscriptionPageLanguageCode,
-    TSubscriptionPageRawConfig
+    TSubscriptionPageLanguageCode
 } from '@remnawave/subscription-page-types'
 import { IconGlobe } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
+import { TPanelSubscriptionPageConfig } from '@shared/utils/subscription-page-config'
 
 import { LocaleCard } from '../editor-components/locale-card.component'
 import styles from '../subpage-config-visual-editor.module.css'
@@ -16,7 +16,7 @@ import styles from '../subpage-config-visual-editor.module.css'
 const ALL_LANGUAGES = getLanguagesArray()
 
 interface IProps {
-    form: UseFormReturnType<TSubscriptionPageRawConfig>
+    form: UseFormReturnType<TPanelSubscriptionPageConfig>
 }
 
 export function LocalizationBlockComponent({ form }: IProps) {

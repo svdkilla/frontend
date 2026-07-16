@@ -1,17 +1,17 @@
 import { Badge, Button, Card, Group } from '@mantine/core'
 import { UseFormReturnType } from '@mantine/form'
 import { useDisclosure } from '@mantine/hooks'
-import { TSubscriptionPageRawConfig } from '@remnawave/subscription-page-types'
 import { IconPhoto } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
+import { TPanelSubscriptionPageConfig } from '@shared/utils/subscription-page-config'
 
 import { SvgLibraryModal } from '../editor-components/svg-library-modal.component'
 import styles from '../subpage-config-visual-editor.module.css'
 
 interface IProps {
-    form: UseFormReturnType<TSubscriptionPageRawConfig>
+    form: UseFormReturnType<TPanelSubscriptionPageConfig>
 }
 
 export function SvgLibraryBlockComponent(props: IProps) {
