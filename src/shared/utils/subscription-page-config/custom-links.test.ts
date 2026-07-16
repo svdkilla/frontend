@@ -42,12 +42,12 @@ describe('panel custom-link validation', () => {
         expect(parsed.mode).toBe('literal')
     })
 
-    it('rejects unknown template variables', () => {
+    it('rejects the removed personalized-template mode', () => {
         expect(
             CustomLinkSchema.safeParse({
                 ...link,
                 mode: 'template',
-                uri: 'https://example.com/{{process.env.SECRET}}'
+                uri: 'https://example.com/{{username}}'
             }).success
         ).toBe(false)
     })
@@ -58,10 +58,27 @@ describe('panel custom-link validation', () => {
             enabled: true,
             uri: 'awg://opaque-payload#Name-from-fragment',
             order: 0,
-            mode: 'literal'
+            mode: 'subscriptionLinks'
         })
 
         expect(parsed.displayName).toEqual({})
         expect(parsed.action).toBe('copy')
+    })
+
+    it('keeps header and connection destinations explicit', () => {
+        expect(
+            CustomLinkSchema.safeParse({
+                ...link,
+                mode: 'literal',
+                uri: 'vless://opaque-payload#Wrong'
+            }).success
+        ).toBe(false)
+        expect(
+            CustomLinkSchema.safeParse({
+                ...link,
+                mode: 'subscriptionLinks',
+                uri: 'https://example.com/wrong'
+            }).success
+        ).toBe(false)
     })
 })

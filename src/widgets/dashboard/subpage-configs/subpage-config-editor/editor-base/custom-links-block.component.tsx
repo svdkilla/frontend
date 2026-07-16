@@ -17,7 +17,6 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import {
     ActionIcon,
-    Alert,
     Badge,
     Box,
     Button,
@@ -42,7 +41,6 @@ import { useTranslation } from 'react-i18next'
 import {
     TbArrowsMoveVertical,
     TbExternalLink,
-    TbInfoCircle,
     TbLink,
     TbPencil,
     TbPlus,
@@ -54,7 +52,6 @@ import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import {
     CUSTOM_LINK_ACTIONS,
     CUSTOM_LINK_MODES,
-    CUSTOM_LINK_SUBSCRIPTION_PROTOCOLS,
     CustomLinkSchema,
     TPanelSubscriptionPageConfig,
     TSubscriptionPageCustomLink
@@ -79,9 +76,7 @@ const getUriScheme = (uri: string): string | undefined =>
     /^([A-Za-z][A-Za-z0-9+.-]*):/u.exec(uri)?.[1]?.toLowerCase()
 
 const isHeaderLink = (link: Pick<TSubscriptionPageCustomLink, 'mode' | 'uri'>): boolean => {
-    if (link.mode === 'subscriptionLinks') return false
-    const scheme = getUriScheme(link.uri)
-    return scheme === 'http' || scheme === 'https'
+    return link.mode === 'literal'
 }
 
 const getConnectionLinkName = (uri: string): string | undefined => {
@@ -95,6 +90,7 @@ const getConnectionLinkName = (uri: string): string | undefined => {
 }
 
 function SortableCustomLinkRow({ currentLocale, link, onDelete, onEdit, onToggle }: RowProps) {
+    const { t } = useTranslation()
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: link.id
     })
@@ -110,9 +106,8 @@ function SortableCustomLinkRow({ currentLocale, link, onDelete, onEdit, onToggle
     const scheme = getUriScheme(link.uri)
     const name = headerLink
         ? (link.displayName[currentLocale] ?? Object.values(link.displayName)[0] ?? link.id)
-        : (getConnectionLinkName(link.uri) ?? `${link.protocol ?? scheme ?? 'connection'}://`)
-    const detail =
-        link.mode === 'subscriptionLinks' ? `${link.protocol ?? '—'}://` : link.uri || '—'
+        : (getConnectionLinkName(link.uri) ?? `${scheme ?? 'connection'}://`)
+    const detail = link.uri || '—'
     const destination = headerLink ? 'Header' : 'Connection keys'
 
     return (
@@ -144,7 +139,7 @@ function SortableCustomLinkRow({ currentLocale, link, onDelete, onEdit, onToggle
                             </Badge>
                         )}
                         <Badge color="violet" size="xs" variant="outline">
-                            {link.mode}
+                            {t(`custom-links-block.component.mode-${link.mode}`)}
                         </Badge>
                         <Badge color="blue" size="xs" variant="light">
                             {destination}
@@ -305,8 +300,7 @@ export function CustomLinksBlockComponent({ form }: Props) {
     const headerDraft = isHeaderLink(draft)
     const previewLabel = headerDraft
         ? (draft.displayName[currentLocale] ?? Object.values(draft.displayName)[0] ?? 'Preview')
-        : (getConnectionLinkName(draft.uri) ??
-          `${draft.protocol ?? getUriScheme(draft.uri) ?? 'connection'}://`)
+        : (getConnectionLinkName(draft.uri) ?? `${getUriScheme(draft.uri) ?? 'connection'}://`)
 
     return (
         <>
@@ -410,10 +404,15 @@ export function CustomLinksBlockComponent({ form }: Props) {
                                 setDraft({
                                     ...draft,
                                     mode: value as TSubscriptionPageCustomLink['mode'],
-                                    protocol:
-                                        value === 'subscriptionLinks'
-                                            ? (draft.protocol ?? 'vless')
-                                            : undefined
+                                    uri: value === 'literal' ? 'https://' : '',
+                                    action: value === 'literal' ? 'open' : 'copy',
+                                    displayName:
+                                        value === 'literal'
+                                            ? Object.fromEntries(
+                                                  values.locales.map((locale) => [locale, ''])
+                                              )
+                                            : {},
+                                    iconKey: undefined
                                 })
                             }
                             value={draft.mode}
@@ -460,52 +459,24 @@ export function CustomLinksBlockComponent({ form }: Props) {
                         </SimpleGrid>
                     )}
 
-                    {draft.mode === 'subscriptionLinks' ? (
-                        <Select
-                            allowDeselect={false}
-                            data={CUSTOM_LINK_SUBSCRIPTION_PROTOCOLS.map((protocol) => ({
-                                value: protocol,
-                                label: `${protocol}://`
-                            }))}
-                            error={errors.protocol}
-                            label={t('custom-links-block.component.protocol')}
-                            onChange={(value) =>
-                                value &&
-                                setDraft({
-                                    ...draft,
-                                    protocol: value as TSubscriptionPageCustomLink['protocol']
-                                })
-                            }
-                            searchable
-                            value={draft.protocol ?? 'vless'}
-                        />
-                    ) : (
-                        <TextInput
-                            description={
-                                draft.mode === 'template'
-                                    ? t('custom-links-block.component.template-variables', {
-                                          username: '{{username}}',
-                                          shortUuid: '{{shortUuid}}',
-                                          subscriptionUrl: '{{subscriptionUrl}}'
-                                      })
-                                    : undefined
-                            }
-                            error={errors.uri}
-                            label="URI"
-                            maxLength={4096}
-                            onChange={(event) =>
-                                setDraft({ ...draft, uri: event.currentTarget.value })
-                            }
-                            required
-                            value={draft.uri}
-                        />
-                    )}
-
-                    {draft.mode === 'literal' && (
-                        <Alert color="yellow" icon={<TbInfoCircle size={18} />} variant="light">
-                            {t('custom-links-block.component.literal-warning')}
-                        </Alert>
-                    )}
+                    <TextInput
+                        description={
+                            headerDraft
+                                ? t('custom-links-block.component.header-uri-hint')
+                                : t('custom-links-block.component.connection-uri-hint')
+                        }
+                        error={errors.uri}
+                        label={
+                            headerDraft
+                                ? t('custom-links-block.component.header-uri')
+                                : t('custom-links-block.component.connection-uri')
+                        }
+                        maxLength={4096}
+                        onChange={(event) => setDraft({ ...draft, uri: event.currentTarget.value })}
+                        placeholder={headerDraft ? 'https://example.com' : 'vless://…#Server name'}
+                        required
+                        value={draft.uri}
+                    />
 
                     {headerDraft && (
                         <SvgIconSelect
@@ -528,9 +499,7 @@ export function CustomLinksBlockComponent({ form }: Props) {
                                         {previewLabel || t('custom-links-block.component.unnamed')}
                                     </Text>
                                     <Text c="dimmed" ff="monospace" size="xs" truncate>
-                                        {draft.mode === 'subscriptionLinks'
-                                            ? `${draft.protocol ?? 'vless'}://…`
-                                            : draft.uri || '—'}
+                                        {draft.uri || '—'}
                                     </Text>
                                 </Box>
                                 <ActionIcon color="cyan" variant="light">

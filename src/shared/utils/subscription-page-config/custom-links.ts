@@ -2,7 +2,7 @@ import { SubscriptionPageRawConfigSchema } from '@remnawave/subscription-page-ty
 import { z } from 'zod'
 
 export const CUSTOM_LINK_ACTIONS = ['open', 'copy', 'qr'] as const
-export const CUSTOM_LINK_MODES = ['literal', 'template', 'subscriptionLinks'] as const
+export const CUSTOM_LINK_MODES = ['literal', 'subscriptionLinks'] as const
 export const BLOCKED_CUSTOM_LINK_SCHEMES = [
     'about',
     'blob',
@@ -13,19 +13,6 @@ export const BLOCKED_CUSTOM_LINK_SCHEMES = [
     'vbscript',
     'view-source'
 ] as const
-export const CUSTOM_LINK_SUBSCRIPTION_PROTOCOLS = [
-    'vless',
-    'vmess',
-    'trojan',
-    'ss',
-    'hysteria2',
-    'hy2',
-    'tuic',
-    'wireguard',
-    'sub'
-] as const
-export const CUSTOM_LINK_TEMPLATE_VARIABLES = ['username', 'shortUuid', 'subscriptionUrl'] as const
-
 const MAX_URI_LENGTH = 4096
 const HTML_DELIMITERS = /[<>]/u
 
@@ -36,9 +23,7 @@ const hasControlCharacters = (value: string): boolean =>
     })
 const SCHEME_PATTERN = /^([A-Za-z][A-Za-z0-9+.-]*):/u
 const PERCENT_ESCAPE_PATTERN = /%[0-9A-Fa-f]{2}/u
-const TEMPLATE_PATTERN = /\{\{\s*([^{}]+?)\s*\}\}/gu
 const blockedSchemes = new Set<string>(BLOCKED_CUSTOM_LINK_SCHEMES)
-const allowedVariables = new Set<string>(CUSTOM_LINK_TEMPLATE_VARIABLES)
 
 const decodedVariants = (value: string): string[] | null => {
     if (!value.includes('%')) return [value]
@@ -86,26 +71,6 @@ export const getCustomLinkUriError = (value: string): string | null => {
     return null
 }
 
-export const getCustomLinkTemplateError = (template: string): string | null => {
-    for (const match of template.matchAll(TEMPLATE_PATTERN)) {
-        if (!allowedVariables.has(match[1]!)) {
-            return `Template variable '{{${match[1]}}}' is not allowed`
-        }
-    }
-
-    const remainder = template.replace(TEMPLATE_PATTERN, 'value')
-    if (remainder.includes('{{') || remainder.includes('}}')) {
-        return 'Template contains malformed variable syntax'
-    }
-
-    return getCustomLinkUriError(
-        template
-            .replace(/\{\{username\}\}/gu, 'example-user')
-            .replace(/\{\{shortUuid\}\}/gu, '01234567')
-            .replace(/\{\{subscriptionUrl\}\}/gu, 'https://subscription.invalid/example')
-    )
-}
-
 const DisplayNameSchema = z.record(
     z.string().regex(/^[a-z]{2}$/u),
     z
@@ -129,29 +94,31 @@ export const CustomLinkSchema = z
         action: z.enum(CUSTOM_LINK_ACTIONS).default('copy'),
         iconKey: z.string().optional(),
         order: z.number().int().min(0).max(10_000),
-        mode: z.enum(CUSTOM_LINK_MODES).default('literal'),
-        protocol: z.enum(CUSTOM_LINK_SUBSCRIPTION_PROTOCOLS).optional()
+        mode: z.enum(CUSTOM_LINK_MODES).default('literal')
     })
     .superRefine((value, context) => {
-        if (value.mode === 'subscriptionLinks') {
-            if (!value.protocol) {
-                context.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: 'Protocol is required',
-                    path: ['protocol']
-                })
-            }
-            return
-        }
-
-        const error =
-            value.mode === 'template'
-                ? getCustomLinkTemplateError(value.uri)
-                : getCustomLinkUriError(value.uri)
+        const error = getCustomLinkUriError(value.uri)
         if (error) {
             context.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: error,
+                path: ['uri']
+            })
+            return
+        }
+
+        const usesHttp = /^https?:/iu.test(value.uri)
+        if (value.mode === 'literal' && !usesHttp) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Header link must use HTTP(S)',
+                path: ['uri']
+            })
+        }
+        if (value.mode === 'subscriptionLinks' && usesHttp) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Connection link must use a non-HTTP URI scheme',
                 path: ['uri']
             })
         }
@@ -188,7 +155,7 @@ export const PanelSubscriptionPageConfigSchema = z.unknown().transform((input, c
         }
         ids.add(link.id)
 
-        if (link.mode !== 'subscriptionLinks' && /^https?:/iu.test(link.uri)) {
+        if (link.mode === 'literal') {
             for (const locale of baseResult.data.locales) {
                 if (!link.displayName[locale]) {
                     context.addIssue({
