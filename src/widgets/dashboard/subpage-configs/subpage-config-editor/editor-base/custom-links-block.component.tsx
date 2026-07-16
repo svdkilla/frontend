@@ -90,6 +90,13 @@ function SortableCustomLinkRow({ currentLocale, link, onDelete, onEdit, onToggle
     const name = link.displayName[currentLocale] ?? Object.values(link.displayName)[0] ?? link.id
     const detail =
         link.mode === 'subscriptionLinks' ? `${link.protocol ?? '—'}://` : link.uri || '—'
+    const scheme = /^([A-Za-z][A-Za-z0-9+.-]*):/u.exec(link.uri)?.[1]?.toLowerCase()
+    const destination =
+        link.mode === 'subscriptionLinks'
+            ? 'Page shortcut'
+            : scheme === 'http' || scheme === 'https'
+              ? 'Header'
+              : 'Server list'
 
     return (
         <Card className={styles.buttonCard} p="sm" radius="md" ref={setNodeRef} style={style}>
@@ -119,6 +126,9 @@ function SortableCustomLinkRow({ currentLocale, link, onDelete, onEdit, onToggle
                         </Badge>
                         <Badge color="violet" size="xs" variant="outline">
                             {link.mode}
+                        </Badge>
+                        <Badge color="blue" size="xs" variant="light">
+                            {destination}
                         </Badge>
                     </Group>
                     <Text c="dimmed" ff="monospace" size="xs" truncate>

@@ -2234,7 +2234,7 @@
   "custom-links-block": {
     "component": {
       "title": "Custom links",
-      "subtitle": "Add safe links and connection actions to the subscription page",
+      "subtitle": "Website links appear in the page header. VPN links are also added to the subscriber's server list.",
       "add": "Add link",
       "edit": "Edit link",
       "empty": "No custom links yet",
