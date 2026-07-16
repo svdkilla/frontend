@@ -78,6 +78,41 @@ describe('panel custom-link validation', () => {
         expect(parsed[0]?.id).toBe('website')
     })
 
+    it('keeps a complete legacy connection URI and strips its old selector', () => {
+        const parsed = CustomLinksSchema.parse([
+            {
+                ...link,
+                mode: 'subscriptionLinks',
+                protocol: 'vless',
+                uri: 'vless://test-marker@example.com:443#Legacy'
+            }
+        ])
+
+        expect(parsed).toHaveLength(1)
+        expect(parsed[0]?.uri).toBe('vless://test-marker@example.com:443#Legacy')
+        expect(parsed[0]).not.toHaveProperty('protocol')
+    })
+
+    it('validates unique internal squad selections', () => {
+        const squadUuid = '11111111-1111-4111-8111-111111111111'
+        expect(
+            CustomLinkSchema.safeParse({
+                ...link,
+                mode: 'subscriptionLinks',
+                uri: 'vless://test-marker@example.com:443#Squad',
+                internalSquadUuids: [squadUuid]
+            }).success
+        ).toBe(true)
+        expect(
+            CustomLinkSchema.safeParse({
+                ...link,
+                mode: 'subscriptionLinks',
+                uri: 'vless://test-marker@example.com:443#Squad',
+                internalSquadUuids: [squadUuid, squadUuid]
+            }).success
+        ).toBe(false)
+    })
+
     it('does not require presentation fields for a connection link', () => {
         const parsed = CustomLinkSchema.parse({
             id: 'connection-only',

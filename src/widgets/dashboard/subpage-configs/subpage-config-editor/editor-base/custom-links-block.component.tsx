@@ -21,11 +21,14 @@ import {
     Box,
     Button,
     Card,
+    Checkbox,
     Divider,
     Drawer,
     Group,
+    ScrollArea,
     Select,
     SimpleGrid,
+    Skeleton,
     Stack,
     Switch,
     Text,
@@ -48,6 +51,7 @@ import {
     TbTrash
 } from 'react-icons/tb'
 
+import { useGetInternalSquads } from '@shared/api/hooks'
 import { BaseOverlayHeader } from '@shared/ui/overlays/base-overlay-header'
 import {
     CUSTOM_LINK_ACTIONS,
@@ -109,6 +113,7 @@ function SortableCustomLinkRow({ currentLocale, link, onDelete, onEdit, onToggle
         : (getConnectionLinkName(link.uri) ?? `${scheme ?? 'connection'}://`)
     const detail = link.uri || '—'
     const destination = headerLink ? 'Header' : 'Connection keys'
+    const squadCount = link.internalSquadUuids.length
 
     return (
         <Card className={styles.buttonCard} p="sm" radius="md" ref={setNodeRef} style={style}>
@@ -144,6 +149,15 @@ function SortableCustomLinkRow({ currentLocale, link, onDelete, onEdit, onToggle
                         <Badge color="blue" size="xs" variant="light">
                             {destination}
                         </Badge>
+                        {!headerLink && (
+                            <Badge color="grape" size="xs" variant="light">
+                                {squadCount === 0
+                                    ? t('custom-links-block.component.all-squads')
+                                    : t('custom-links-block.component.selected-squads-count', {
+                                          count: squadCount
+                                      })}
+                            </Badge>
+                        )}
                     </Group>
                     <Text c="dimmed" ff="monospace" size="xs" truncate>
                         {detail}
@@ -186,7 +200,8 @@ const createDraft = (
     uri: 'https://',
     action: 'open',
     order,
-    mode: 'literal'
+    mode: 'literal',
+    internalSquadUuids: []
 })
 
 export function CustomLinksBlockComponent({ form }: Props) {
@@ -199,6 +214,12 @@ export function CustomLinksBlockComponent({ form }: Props) {
         createDraft(values.locales, links.length)
     )
     const [errors, setErrors] = useState<Record<string, string>>({})
+    const [limitToSelectedSquads, setLimitToSelectedSquads] = useState(false)
+    const {
+        data: internalSquadsResponse,
+        isLoading: isInternalSquadsLoading,
+        isError: isInternalSquadsError
+    } = useGetInternalSquads()
     const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor))
     const currentLocale = values.locales[0] ?? 'en'
 
@@ -222,21 +243,49 @@ export function CustomLinksBlockComponent({ form }: Props) {
     const openNew = () => {
         setEditingId(null)
         setDraft(createDraft(form.getValues().locales, form.getValues().customLinks.length))
+        setLimitToSelectedSquads(false)
         setErrors({})
         setOpened(true)
     }
 
     const openEdit = (link: TSubscriptionPageCustomLink) => {
         setEditingId(link.id)
-        setDraft({ ...link, displayName: { ...link.displayName } })
+        setDraft({
+            ...link,
+            displayName: { ...link.displayName },
+            internalSquadUuids: [...link.internalSquadUuids]
+        })
+        setLimitToSelectedSquads(link.internalSquadUuids.length > 0)
         setErrors({})
         setOpened(true)
     }
 
     const saveDraft = () => {
+        if (
+            !isHeaderLink(draft) &&
+            limitToSelectedSquads &&
+            draft.internalSquadUuids.length === 0
+        ) {
+            setErrors({
+                ...errors,
+                internalSquadUuids: t('custom-links-block.component.select-squad-error')
+            })
+            return
+        }
+
+        const draftWithoutLegacyProtocol = { ...draft } as TSubscriptionPageCustomLink & {
+            protocol?: unknown
+        }
+        delete draftWithoutLegacyProtocol.protocol
         const normalizedDraft = isHeaderLink(draft)
-            ? draft
-            : { ...draft, action: 'copy' as const, displayName: {}, iconKey: undefined }
+            ? { ...draftWithoutLegacyProtocol, internalSquadUuids: [] }
+            : {
+                  ...draftWithoutLegacyProtocol,
+                  action: 'copy' as const,
+                  displayName: {},
+                  iconKey: undefined,
+                  internalSquadUuids: limitToSelectedSquads ? draft.internalSquadUuids : []
+              }
         const result = CustomLinkSchema.safeParse(normalizedDraft)
         if (!result.success) {
             setErrors(
@@ -399,8 +448,9 @@ export function CustomLinksBlockComponent({ form }: Props) {
                             data={modeData}
                             error={errors.mode}
                             label={t('custom-links-block.component.mode')}
-                            onChange={(value) =>
-                                value &&
+                            onChange={(value) => {
+                                if (!value) return
+                                setLimitToSelectedSquads(false)
                                 setDraft({
                                     ...draft,
                                     mode: value as TSubscriptionPageCustomLink['mode'],
@@ -412,9 +462,10 @@ export function CustomLinksBlockComponent({ form }: Props) {
                                                   values.locales.map((locale) => [locale, ''])
                                               )
                                             : {},
-                                    iconKey: undefined
+                                    iconKey: undefined,
+                                    internalSquadUuids: []
                                 })
-                            }
+                            }}
                             value={draft.mode}
                         />
                         {headerDraft && (
@@ -477,6 +528,85 @@ export function CustomLinksBlockComponent({ form }: Props) {
                         required
                         value={draft.uri}
                     />
+
+                    {!headerDraft && (
+                        <Card className={styles.buttonCard} p="md" radius="md">
+                            <Stack gap="sm">
+                                <Checkbox
+                                    checked={limitToSelectedSquads}
+                                    description={t(
+                                        'custom-links-block.component.squad-filter-hint'
+                                    )}
+                                    label={t('custom-links-block.component.limit-to-squads')}
+                                    onChange={(event) => {
+                                        const checked = event.currentTarget.checked
+                                        setLimitToSelectedSquads(checked)
+                                        setErrors((current) => {
+                                            const { internalSquadUuids: _removed, ...rest } =
+                                                current
+                                            return rest
+                                        })
+                                        if (!checked) {
+                                            setDraft({ ...draft, internalSquadUuids: [] })
+                                        }
+                                    }}
+                                />
+
+                                {!limitToSelectedSquads && (
+                                    <Text c="dimmed" size="xs">
+                                        {t('custom-links-block.component.available-to-all')}
+                                    </Text>
+                                )}
+
+                                {limitToSelectedSquads && isInternalSquadsLoading && (
+                                    <Stack gap="xs">
+                                        <Skeleton height={20} radius="sm" />
+                                        <Skeleton height={20} radius="sm" />
+                                    </Stack>
+                                )}
+
+                                {limitToSelectedSquads && isInternalSquadsError && (
+                                    <Text c="red" size="xs">
+                                        {t('custom-links-block.component.squads-load-error')}
+                                    </Text>
+                                )}
+
+                                {limitToSelectedSquads && internalSquadsResponse && (
+                                    <Checkbox.Group
+                                        onChange={(internalSquadUuids) => {
+                                            setDraft({ ...draft, internalSquadUuids })
+                                            setErrors((current) => {
+                                                const { internalSquadUuids: _removed, ...rest } =
+                                                    current
+                                                return rest
+                                            })
+                                        }}
+                                        value={draft.internalSquadUuids}
+                                    >
+                                        <ScrollArea.Autosize mah={240} offsetScrollbars>
+                                            <Stack gap="xs">
+                                                {internalSquadsResponse.internalSquads.map(
+                                                    (squad) => (
+                                                        <Checkbox
+                                                            key={squad.uuid}
+                                                            label={squad.name}
+                                                            value={squad.uuid}
+                                                        />
+                                                    )
+                                                )}
+                                            </Stack>
+                                        </ScrollArea.Autosize>
+                                    </Checkbox.Group>
+                                )}
+
+                                {errors.internalSquadUuids && (
+                                    <Text c="red" size="xs">
+                                        {errors.internalSquadUuids}
+                                    </Text>
+                                )}
+                            </Stack>
+                        </Card>
+                    )}
 
                     {headerDraft && (
                         <SvgIconSelect
