@@ -3,18 +3,15 @@ import { z } from 'zod'
 
 export const CUSTOM_LINK_ACTIONS = ['open', 'copy', 'qr'] as const
 export const CUSTOM_LINK_MODES = ['literal', 'template', 'subscriptionLinks'] as const
-export const ALLOWED_CUSTOM_LINK_SCHEMES = [
-    'https',
-    'http',
-    'vless',
-    'vmess',
-    'trojan',
-    'ss',
-    'hysteria2',
-    'hy2',
-    'tuic',
-    'wireguard',
-    'sub'
+export const BLOCKED_CUSTOM_LINK_SCHEMES = [
+    'about',
+    'blob',
+    'data',
+    'file',
+    'filesystem',
+    'javascript',
+    'vbscript',
+    'view-source'
 ] as const
 export const CUSTOM_LINK_SUBSCRIPTION_PROTOCOLS = [
     'vless',
@@ -40,7 +37,7 @@ const hasControlCharacters = (value: string): boolean =>
 const SCHEME_PATTERN = /^([A-Za-z][A-Za-z0-9+.-]*):/u
 const PERCENT_ESCAPE_PATTERN = /%[0-9A-Fa-f]{2}/u
 const TEMPLATE_PATTERN = /\{\{\s*([^{}]+?)\s*\}\}/gu
-const allowedSchemes = new Set<string>(ALLOWED_CUSTOM_LINK_SCHEMES)
+const blockedSchemes = new Set<string>(BLOCKED_CUSTOM_LINK_SCHEMES)
 const allowedVariables = new Set<string>(CUSTOM_LINK_TEMPLATE_VARIABLES)
 
 const decodedVariants = (value: string): string[] | null => {
@@ -68,7 +65,7 @@ export const getCustomLinkUriError = (value: string): string | null => {
     const match = SCHEME_PATTERN.exec(value)
     if (!match) return 'URI must start with an explicit allowed scheme'
     const scheme = match[1]!.toLowerCase()
-    if (!allowedSchemes.has(scheme)) return `URI scheme '${scheme}' is not allowed`
+    if (blockedSchemes.has(scheme)) return `URI scheme '${scheme}' is not allowed`
 
     if (scheme === 'https' || scheme === 'http') {
         try {
@@ -109,17 +106,15 @@ export const getCustomLinkTemplateError = (template: string): string | null => {
     )
 }
 
-const DisplayNameSchema = z
-    .record(
-        z.string().regex(/^[a-z]{2}$/u),
-        z
-            .string()
-            .trim()
-            .min(1, 'Display name is required')
-            .max(100, 'Display name must be 100 characters or fewer')
-            .refine((value) => !HTML_DELIMITERS.test(value), 'Display name must not contain HTML')
-    )
-    .refine((value) => Object.keys(value).length > 0, 'At least one language is required')
+const DisplayNameSchema = z.record(
+    z.string().regex(/^[a-z]{2}$/u),
+    z
+        .string()
+        .trim()
+        .min(1, 'Display name is required')
+        .max(100, 'Display name must be 100 characters or fewer')
+        .refine((value) => !HTML_DELIMITERS.test(value), 'Display name must not contain HTML')
+)
 
 export const CustomLinkSchema = z
     .object({
@@ -129,9 +124,9 @@ export const CustomLinkSchema = z
             .max(64)
             .regex(/^[A-Za-z0-9_-]+$/u),
         enabled: z.boolean().default(true),
-        displayName: DisplayNameSchema,
+        displayName: DisplayNameSchema.optional().default({}),
         uri: z.string().default(''),
-        action: z.enum(CUSTOM_LINK_ACTIONS),
+        action: z.enum(CUSTOM_LINK_ACTIONS).default('copy'),
         iconKey: z.string().optional(),
         order: z.number().int().min(0).max(10_000),
         mode: z.enum(CUSTOM_LINK_MODES).default('literal'),
@@ -192,6 +187,18 @@ export const PanelSubscriptionPageConfigSchema = z.unknown().transform((input, c
             })
         }
         ids.add(link.id)
+
+        if (link.mode !== 'subscriptionLinks' && /^https?:/iu.test(link.uri)) {
+            for (const locale of baseResult.data.locales) {
+                if (!link.displayName[locale]) {
+                    context.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: `Missing required locale '${locale}'`,
+                        path: ['customLinks', index, 'displayName', locale]
+                    })
+                }
+            }
+        }
     })
 
     return { ...baseResult.data, customLinks: customLinksResult.data }

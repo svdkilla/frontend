@@ -75,6 +75,25 @@ interface RowProps {
     onToggle: (enabled: boolean) => void
 }
 
+const getUriScheme = (uri: string): string | undefined =>
+    /^([A-Za-z][A-Za-z0-9+.-]*):/u.exec(uri)?.[1]?.toLowerCase()
+
+const isHeaderLink = (link: Pick<TSubscriptionPageCustomLink, 'mode' | 'uri'>): boolean => {
+    if (link.mode === 'subscriptionLinks') return false
+    const scheme = getUriScheme(link.uri)
+    return scheme === 'http' || scheme === 'https'
+}
+
+const getConnectionLinkName = (uri: string): string | undefined => {
+    const fragment = uri.slice(uri.lastIndexOf('#') + 1)
+    if (!fragment || !uri.includes('#')) return undefined
+    try {
+        return decodeURIComponent(fragment)
+    } catch {
+        return fragment
+    }
+}
+
 function SortableCustomLinkRow({ currentLocale, link, onDelete, onEdit, onToggle }: RowProps) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: link.id
@@ -87,16 +106,14 @@ function SortableCustomLinkRow({ currentLocale, link, onDelete, onEdit, onToggle
         zIndex: isDragging ? 10 : 'auto'
     }
 
-    const name = link.displayName[currentLocale] ?? Object.values(link.displayName)[0] ?? link.id
+    const headerLink = isHeaderLink(link)
+    const scheme = getUriScheme(link.uri)
+    const name = headerLink
+        ? (link.displayName[currentLocale] ?? Object.values(link.displayName)[0] ?? link.id)
+        : (getConnectionLinkName(link.uri) ?? `${link.protocol ?? scheme ?? 'connection'}://`)
     const detail =
         link.mode === 'subscriptionLinks' ? `${link.protocol ?? '—'}://` : link.uri || '—'
-    const scheme = /^([A-Za-z][A-Za-z0-9+.-]*):/u.exec(link.uri)?.[1]?.toLowerCase()
-    const destination =
-        link.mode === 'subscriptionLinks'
-            ? 'Page shortcut'
-            : scheme === 'http' || scheme === 'https'
-              ? 'Header'
-              : 'Server list'
+    const destination = headerLink ? 'Header' : 'Connection keys'
 
     return (
         <Card className={styles.buttonCard} p="sm" radius="md" ref={setNodeRef} style={style}>
@@ -121,9 +138,11 @@ function SortableCustomLinkRow({ currentLocale, link, onDelete, onEdit, onToggle
                         <Badge color={link.enabled ? 'teal' : 'gray'} size="xs" variant="light">
                             {link.enabled ? 'Enabled' : 'Disabled'}
                         </Badge>
-                        <Badge color="cyan" size="xs" variant="outline">
-                            {link.action}
-                        </Badge>
+                        {headerLink && (
+                            <Badge color="cyan" size="xs" variant="outline">
+                                {link.action}
+                            </Badge>
+                        )}
                         <Badge color="violet" size="xs" variant="outline">
                             {link.mode}
                         </Badge>
@@ -220,7 +239,10 @@ export function CustomLinksBlockComponent({ form }: Props) {
     }
 
     const saveDraft = () => {
-        const result = CustomLinkSchema.safeParse(draft)
+        const normalizedDraft = isHeaderLink(draft)
+            ? draft
+            : { ...draft, action: 'copy' as const, displayName: {}, iconKey: undefined }
+        const result = CustomLinkSchema.safeParse(normalizedDraft)
         if (!result.success) {
             setErrors(
                 Object.fromEntries(
@@ -280,8 +302,11 @@ export function CustomLinksBlockComponent({ form }: Props) {
         )
     }
 
-    const previewLabel =
-        draft.displayName[currentLocale] ?? Object.values(draft.displayName)[0] ?? 'Preview'
+    const headerDraft = isHeaderLink(draft)
+    const previewLabel = headerDraft
+        ? (draft.displayName[currentLocale] ?? Object.values(draft.displayName)[0] ?? 'Preview')
+        : (getConnectionLinkName(draft.uri) ??
+          `${draft.protocol ?? getUriScheme(draft.uri) ?? 'connection'}://`)
 
     return (
         <>
@@ -393,43 +418,47 @@ export function CustomLinksBlockComponent({ form }: Props) {
                             }
                             value={draft.mode}
                         />
-                        <Select
-                            allowDeselect={false}
-                            data={actionData}
-                            error={errors.action}
-                            label={t('custom-links-block.component.action')}
-                            onChange={(value) =>
-                                value &&
-                                setDraft({
-                                    ...draft,
-                                    action: value as TSubscriptionPageCustomLink['action']
-                                })
-                            }
-                            value={draft.action}
-                        />
-                    </SimpleGrid>
-
-                    <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                        {values.locales.map((locale) => (
-                            <TextInput
-                                error={errors[`displayName.${locale}`]}
-                                key={locale}
-                                label={`${t('custom-links-block.component.display-name')} (${locale.toUpperCase()})`}
-                                maxLength={100}
-                                onChange={(event) =>
+                        {headerDraft && (
+                            <Select
+                                allowDeselect={false}
+                                data={actionData}
+                                error={errors.action}
+                                label={t('custom-links-block.component.action')}
+                                onChange={(value) =>
+                                    value &&
                                     setDraft({
                                         ...draft,
-                                        displayName: {
-                                            ...draft.displayName,
-                                            [locale]: event.currentTarget.value
-                                        }
+                                        action: value as TSubscriptionPageCustomLink['action']
                                     })
                                 }
-                                required
-                                value={draft.displayName[locale] ?? ''}
+                                value={draft.action}
                             />
-                        ))}
+                        )}
                     </SimpleGrid>
+
+                    {headerDraft && (
+                        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                            {values.locales.map((locale) => (
+                                <TextInput
+                                    error={errors[`displayName.${locale}`]}
+                                    key={locale}
+                                    label={`${t('custom-links-block.component.display-name')} (${locale.toUpperCase()})`}
+                                    maxLength={100}
+                                    onChange={(event) =>
+                                        setDraft({
+                                            ...draft,
+                                            displayName: {
+                                                ...draft.displayName,
+                                                [locale]: event.currentTarget.value
+                                            }
+                                        })
+                                    }
+                                    required
+                                    value={draft.displayName[locale] ?? ''}
+                                />
+                            ))}
+                        </SimpleGrid>
+                    )}
 
                     {draft.mode === 'subscriptionLinks' ? (
                         <Select
@@ -478,13 +507,15 @@ export function CustomLinksBlockComponent({ form }: Props) {
                         </Alert>
                     )}
 
-                    <SvgIconSelect
-                        label={t('custom-links-block.component.icon')}
-                        onChange={(iconKey) => setDraft({ ...draft, iconKey })}
-                        required={false}
-                        svgLibrary={values.svgLibrary}
-                        value={draft.iconKey}
-                    />
+                    {headerDraft && (
+                        <SvgIconSelect
+                            label={t('custom-links-block.component.icon')}
+                            onChange={(iconKey) => setDraft({ ...draft, iconKey })}
+                            required={false}
+                            svgLibrary={values.svgLibrary}
+                            value={draft.iconKey}
+                        />
+                    )}
 
                     <Card className={styles.buttonCard} p="md" radius="md">
                         <Stack gap="xs">
@@ -503,7 +534,7 @@ export function CustomLinksBlockComponent({ form }: Props) {
                                     </Text>
                                 </Box>
                                 <ActionIcon color="cyan" variant="light">
-                                    {draft.action === 'qr' ? (
+                                    {headerDraft && draft.action === 'qr' ? (
                                         <TbQrcode size={18} />
                                     ) : (
                                         <TbExternalLink size={18} />

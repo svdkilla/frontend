@@ -15,6 +15,9 @@ describe('panel custom-link validation', () => {
         'vless://id@example.com:443?security=tls',
         'hysteria2://secret@example.com:443',
         'hy2://secret@example.com:443',
+        'wg://opaque-payload#WG',
+        'awg://opaque-payload#AWG',
+        'myvpn+test://anything-the-client-understands#Custom',
         'https://example.com/path'
     ])('accepts %s', (uri) => {
         expect(getCustomLinkUriError(uri)).toBeNull()
@@ -47,5 +50,18 @@ describe('panel custom-link validation', () => {
                 uri: 'https://example.com/{{process.env.SECRET}}'
             }).success
         ).toBe(false)
+    })
+
+    it('does not require presentation fields for a connection link', () => {
+        const parsed = CustomLinkSchema.parse({
+            id: 'connection-only',
+            enabled: true,
+            uri: 'awg://opaque-payload#Name-from-fragment',
+            order: 0,
+            mode: 'literal'
+        })
+
+        expect(parsed.displayName).toEqual({})
+        expect(parsed.action).toBe('copy')
     })
 })
