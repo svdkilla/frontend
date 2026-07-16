@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { CustomLinkSchema, getCustomLinkUriError } from './custom-links'
+import { CustomLinkSchema, CustomLinksSchema, getCustomLinkUriError } from './custom-links'
 
 const link = {
     id: 'example-link',
@@ -50,6 +50,32 @@ describe('panel custom-link validation', () => {
                 uri: 'https://example.com/{{username}}'
             }).success
         ).toBe(false)
+    })
+
+    it('drops old protocol selectors and templates from loaded configs', () => {
+        const parsed = CustomLinksSchema.parse([
+            {
+                ...link,
+                mode: 'subscriptionLinks',
+                protocol: 'vless',
+                uri: 'https://'
+            },
+            {
+                ...link,
+                id: 'old-template',
+                mode: 'template',
+                uri: 'https://example.com/{{username}}'
+            },
+            {
+                ...link,
+                id: 'website',
+                mode: 'literal',
+                uri: 'https://example.com/help'
+            }
+        ])
+
+        expect(parsed).toHaveLength(1)
+        expect(parsed[0]?.id).toBe('website')
     })
 
     it('does not require presentation fields for a connection link', () => {

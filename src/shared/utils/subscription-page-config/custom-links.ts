@@ -124,7 +124,20 @@ export const CustomLinkSchema = z
         }
     })
 
-export const CustomLinksSchema = z.array(CustomLinkSchema).max(50)
+const isRemovedLegacyCustomLink = (value: unknown): boolean => {
+    if (!value || typeof value !== 'object') return false
+    const link = value as Record<string, unknown>
+    return (
+        link.mode === 'template' ||
+        (link.mode === 'subscriptionLinks' && typeof link.protocol === 'string')
+    )
+}
+
+export const CustomLinksSchema = z.preprocess(
+    (value) =>
+        Array.isArray(value) ? value.filter((link) => !isRemovedLegacyCustomLink(link)) : value,
+    z.array(CustomLinkSchema).max(50)
+)
 
 export const PanelSubscriptionPageConfigSchema = z.unknown().transform((input, context) => {
     const baseResult = SubscriptionPageRawConfigSchema.safeParse(input)
