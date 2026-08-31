@@ -1230,6 +1230,16 @@
     "external-squad": "External Squad",
     "select-an-external-squad": "Select an external squad..."
   },
+  "extended-server-list-card": {
+    "title": "Extended server list",
+    "switch-label": "Show hidden direct servers",
+    "description": "Adds the available legacy direct servers to this user's subscription. AUTO balancers and squad restrictions remain active.",
+    "saved": "Preference saved",
+    "enabled-message": "Extended servers are now included in the subscription.",
+    "disabled-message": "The subscription now contains the standard server list.",
+    "error-title": "Could not save preference",
+    "error-message": "The extended server list setting is temporarily unavailable."
+  },
   "device-tag-settings-card": {
     "device-and-tag-settings": "Device & Tag Settings"
   },

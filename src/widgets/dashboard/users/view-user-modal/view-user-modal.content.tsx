@@ -37,6 +37,8 @@ import { handleFormErrors } from '@shared/utils/misc'
 
 import { useUserModalStoreActions } from '@entities/dashboard/user-modal-store/user-modal-store'
 
+import { ExtendedServerListCard } from './extended-server-list.card'
+
 const MotionWrapper = motion.div
 const MotionStack = motion.create(Stack)
 
@@ -232,6 +234,11 @@ export const ViewUserModalContent = (props: IProps) => {
                         internalSquads={internalSquads}
                         motionWrapper={MotionWrapper}
                     />
+                    <ExtendedServerListCard
+                        cardVariants={cardVariants}
+                        motionWrapper={MotionWrapper}
+                        userUuid={user.uuid}
+                    />
                     <ContactInformationCard
                         cardVariants={cardVariants}
                         form={form}
@@ -292,6 +299,11 @@ export const ViewUserModalContent = (props: IProps) => {
                             form={form}
                             internalSquads={internalSquads}
                             motionWrapper={MotionWrapper}
+                        />
+                        <ExtendedServerListCard
+                            cardVariants={cardVariants}
+                            motionWrapper={MotionWrapper}
+                            userUuid={user.uuid}
                         />
                     </MotionStack>
                 </Group>

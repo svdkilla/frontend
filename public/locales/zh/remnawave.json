@@ -1230,6 +1230,16 @@
     "external-squad": "外部分组",
     "select-an-external-squad": "选择一个外部分组..."
   },
+  "extended-server-list-card": {
+    "title": "扩展服务器列表",
+    "switch-label": "显示隐藏的直连服务器",
+    "description": "将可用的旧直连服务器添加到此用户的订阅中，同时保留 AUTO 负载均衡和小队限制。",
+    "saved": "设置已保存",
+    "enabled-message": "扩展服务器已添加到订阅。",
+    "disabled-message": "订阅已恢复为标准服务器列表。",
+    "error-title": "无法保存设置",
+    "error-message": "扩展服务器列表设置暂时不可用。"
+  },
   "device-tag-settings-card": {
     "device-and-tag-settings": "设备与标签设置"
   },
